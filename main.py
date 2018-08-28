@@ -3,11 +3,13 @@ from load_data import load_data, Problem, Job, Operation, Task
 from flexible_job_shop import get_schedule, MAKESPAN, LMAX
 
 
-def run_test(objective):
+def run_test(pos):
+  objective = LMAX
   cases = get_test_cases()
 
   for index, case in enumerate(cases):
-    result = get_schedule(case['problem'], objective, verbose=False)
+    verbose = (index == pos)
+    result = get_schedule(case['problem'], objective, verbose=verbose)
     didPass = result == case['expected']
     resultString = ('Passed' if didPass else 'Failed')
     print('Test %i %s!' % (index, resultString))
@@ -107,8 +109,11 @@ if __name__ == "__main__":
     file_name = './Production schedule.csv'
 
 
-    if len(sys.argv) == 2 and sys.argv[1] == '--test':
-      run_test(objective)
+    if len(sys.argv) > 1 and sys.argv[1] == '--test':
+      pos = None
+      if len(sys.argv) == 3:
+        pos = int(sys.argv[2])
+      run_test(pos)
 
     else:
         problem = load_data(file_name, indexes)

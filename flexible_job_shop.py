@@ -66,6 +66,8 @@ def get_schedule(problem, objective, verbose=True):
   job_overdues = []
 
   # Scan the jobs and create the relevant variables and intervals.
+  maxDueDate = 0
+  minDueDate = 0
   for job_id in all_jobs:
     job = jobs[job_id]
     num_tasks = len(job)
@@ -137,9 +139,12 @@ def get_schedule(problem, objective, verbose=True):
     # Calculate lateness from end of job
     job_suffix = "_%i" % job_id
     rawDueDate = problem.jobs[job_id].dueDate
+    if rawDueDate > maxDueDate: maxDueDate = rawDueDate
+    if rawDueDate > minDueDate: minDueDate = rawDueDate
+
+    # Define the overdue variable
     dueDate = model.NewIntVar(rawDueDate, rawDueDate, "duedate" + job_suffix)
     overdue = model.NewIntVar(-horizon, horizon, "overdue" + job_suffix)
-    # Overdue is equal to the end of the job - Due date
     model.Add(overdue == previous_end - dueDate)
     job_overdues.append(overdue)
 
@@ -157,8 +162,7 @@ def get_schedule(problem, objective, verbose=True):
     model.Minimize(makespan)
   elif objective == LMAX:
     # Lmax Objective
-    # TODO should use -maxduedate instead of -horizon
-    Lmax = model.NewIntVar(-horizon, horizon, 'Lmax')
+    Lmax = model.NewIntVar(-maxDueDate, horizon - minDueDate, 'Lmax')
     model.AddMaxEquality(Lmax, job_overdues)
     model.Minimize(Lmax)
 
