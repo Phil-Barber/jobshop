@@ -2,19 +2,23 @@ import csv
 from datetime import time
 
 class Problem:
+    ''' Main class for problem (should def add solution as method to this if we 
+      were doing this properly lol) 
+      Holds list of jobs and machines as well as some helper functions '''
     def __init__(self, jobs):
         self.jobs = jobs
         self.machines = []
         self.get_machines()
 
     def flatten(self):
+        ''' Flattens to array for purposes of solution function '''
         flat = []
         for j in self.jobs:
             flat.append(j.flatten(self.machines))
         return flat
 
-    # map machines from name to index
     def get_machines(self):
+        ''' Map machines from name to index '''
         for j in self.jobs:
             machines = j.get_machines()
             for machine in machines:
@@ -25,6 +29,7 @@ class Problem:
         return self.machines[index]
         
     def mix_machines(self):
+        ''' for purposes of example data - add all machines to all tasks'''
         for j in self.jobs:
             for o in j.operations:
                 for m in self.machines:

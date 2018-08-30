@@ -4,6 +4,7 @@ from flexible_job_shop import get_schedule, MAKESPAN, LMAX
 
 
 def run_test(pos):
+  ''' run test caes with LMax objective'''
   objective = LMAX
   cases = get_test_cases()
 
@@ -13,6 +14,8 @@ def run_test(pos):
     didPass = result == case['expected']
     resultString = ('Passed' if didPass else 'Failed')
     print('Test %i %s!' % (index, resultString))
+
+    # if test fails print full solution
     if not didPass:
       print('received: %i\texpected: %i' % (result, case['expected']))
       print('Re-runnning verbose:')

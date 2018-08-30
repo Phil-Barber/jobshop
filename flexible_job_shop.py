@@ -32,7 +32,7 @@ class SolutionPrinter(cp_model.CpSolverSolutionCallback):
           (self.__solution_count, self.WallTime(), self.ObjectiveValue()))
     self.__solution_count += 1
 
-
+# objective values 
 MAKESPAN = 'makespan'
 LMAX = 'Lmax'
 
@@ -44,12 +44,13 @@ def get_schedule(problem, objective, verbose=True):
   num_jobs = len(jobs)
   all_jobs = range(num_jobs)
 
-  num_machines = 3
+  num_machines = len(problem.machines)
   all_machines = range(num_machines)
 
   # Model the flexible jobshop problem.
   model = cp_model.CpModel()
 
+  # Calculate maximum possible duration
   horizon = 0
   for job in jobs:
     for task in job:
