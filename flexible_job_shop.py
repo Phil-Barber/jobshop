@@ -36,6 +36,27 @@ class SolutionPrinter(cp_model.CpSolverSolutionCallback):
 MAKESPAN = 'makespan'
 LMAX = 'Lmax'
 
+changeover_time = 100
+
+def get_arcs(machine, model, starts, ends):
+  arcs = []
+
+  for i, start in enumerate(starts):
+    suffix = '%i_%i' % (machine, i)
+    arcs.append((0, i+1, model.NewBoolVar('start_node_' + suffix)))
+    arcs.append((i+1, 0, model.NewBoolVar('end_node_' + suffix)))
+
+    for j, start in enumerate(starts): 
+      if j != i:
+        literal = model.NewBoolVar('arc_%s_%i' % (suffix, j))
+        arcs.append((i+1, j+1, literal))
+        changeover = model.NewIntVar(100, 100, 'changeover_%i_%i' % (i, j))
+
+        model.Add(start >= ends[i] + changeover).OnlyEnforceIf(literal)
+          
+  return arcs
+
+
 def get_schedule(problem, objective, verbose=True):
   jobs = problem.flatten()
 
@@ -44,7 +65,7 @@ def get_schedule(problem, objective, verbose=True):
   num_jobs = len(jobs)
   all_jobs = range(num_jobs)
 
-  num_machines = 3
+  num_machines = len(problem.machines)
   all_machines = range(num_machines)
 
   # Model the flexible jobshop problem.
@@ -55,11 +76,14 @@ def get_schedule(problem, objective, verbose=True):
     for task in job:
       max_task_duration = 0
       for alternative in task:
-        max_task_duration = max(max_task_duration, alternative[0])
+        max_task_duration = max(
+          max_task_duration, alternative[0] + changeover_time)
       horizon += max_task_duration
 
   # Global storage of variables.
-  intervals_per_resources = defaultdict(list)
+  machine_to_starts = defaultdict(list)
+  machine_to_ends = defaultdict(list)
+  machine_to_intervals = defaultdict(list)
   starts = {}  # indexed by (job_id, task_id).
   presences = {}  # indexed by (job_id, task_id, alt_id).
   job_ends = []
@@ -121,8 +145,10 @@ def get_schedule(problem, objective, verbose=True):
           model.Add(duration == l_duration).OnlyEnforceIf(l_presence)
           model.Add(end == l_end).OnlyEnforceIf(l_presence)
 
-          # Add the local interval to the right machine.
-          intervals_per_resources[task[alt_id][1]].append(l_interval)
+          # Add the local variables to the right machine.
+          machine_to_starts[task[alt_id][1]].append(l_start)
+          machine_to_ends[task[alt_id][1]].append(l_end)
+          machine_to_intervals[task[alt_id][1]].append(l_interval)
 
           # Store the presences for the solution.
           presences[(job_id, task_id, alt_id)] = l_presence
@@ -130,7 +156,11 @@ def get_schedule(problem, objective, verbose=True):
         # Select exactly one presence variable.
         model.Add(sum(l_presences) == 1)
       else:
-        intervals_per_resources[task[0][1]].append(interval)
+        machine = task[0][1]
+        machine_to_starts[machine].append(start)
+        machine_to_ends[machine].append(end)
+        machine_to_intervals[machine].append(interval)
+
         presences[(job_id, task_id, 0)] = model.NewIntVar(1, 1, '')
 
     job_ends.append(previous_end)
@@ -151,9 +181,20 @@ def get_schedule(problem, objective, verbose=True):
 
   # Create machines constraints.
   for machine_id in all_machines:
-    intervals = intervals_per_resources[machine_id]
+    intervals = machine_to_intervals[machine_id]
     if len(intervals) > 1:
       model.AddNoOverlap(intervals)
+
+    # This is my attempt at adding changeover times
+    # explaination: 
+    #   https://groups.google.com/forum/#!searchin/or-tools-discuss/changeover%7Csort:date/or-tools-discuss/mlxVrMQtcHM/wKm3M9IrAQAJ
+    model.AddCircuit(get_arcs(
+      machine_id,
+      model,
+      machine_to_starts[machine_id],
+      machine_to_ends[machine_id]
+    ))
+
 
   # Makespan objective
   if objective == MAKESPAN:

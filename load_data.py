@@ -75,9 +75,10 @@ class Operation:
             
 
 class Task: 
-    def __init__(self, machine, duration):
+    def __init__(self, machine, duration, tool=0):
         self.machine = machine
         self.duration = duration
+        self.tool = tool
 
 
     def flatten(self, machines):

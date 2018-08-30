@@ -7,18 +7,20 @@ def run_test(pos):
   objective = LMAX
   cases = get_test_cases()
 
-  for index, case in enumerate(cases):
-    verbose = (index == pos)
-    result = get_schedule(case['problem'], objective, verbose=verbose)
-    didPass = result == case['expected']
-    resultString = ('Passed' if didPass else 'Failed')
-    print('Test %i %s!' % (index, resultString))
-    if not didPass:
-      print('received: %i\texpected: %i' % (result, case['expected']))
-      print('Re-runnning verbose:')
-      get_schedule(case['problem'], objective, verbose=True)
-      doQuit = input("Quit? [y]yes:");
-      if doQuit == "y": quit()
+  if pos == None:
+    for index, case in enumerate(cases):
+      result = get_schedule(case['problem'], objective, verbose=False)
+      didPass = result == case['expected']
+      resultString = ('Passed' if didPass else 'Failed')
+      print('Test %i %s!' % (index, resultString))
+      if not didPass:
+        print('received: %i\texpected: %i' % (result, case['expected']))
+        print('Re-runnning verbose:')
+        get_schedule(case['problem'], objective, verbose=True)
+        doQuit = input("Quit? [y]yes:");
+        if doQuit == "y": quit()
+  else :
+    get_schedule(cases[pos]['problem'], objective, True)
 
 
 def get_test_cases():
@@ -34,13 +36,13 @@ def get_test_cases():
     {
       'problem': Problem([
         Job("J1", [
-          Operation([Task("M1", 500), Task("M2", 400)])
+          Operation([Task("M1", 500, 0), Task("M2", 400, 0)])
         ], 800),
         Job("J2", [
-          Operation([Task("M1", 400), Task("M2", 300)])
+          Operation([Task("M1", 400, 1), Task("M2", 300, 1)])
         ], 600),
         Job("J3", [
-          Operation([Task("M1", 400), Task("M2", 300)])
+          Operation([Task("M1", 400, 2), Task("M2", 300, 2)])
         ], 800)
       ]),
       'expected': -200
